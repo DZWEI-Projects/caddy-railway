@@ -1,371 +1,1457 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title>Caddy on Railway works!</title>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="icon" href="data:,">
-	<style>
-		* {
-			box-sizing: border-box;
-			padding: 0;
-			margin: 0;
-		}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>suite-static · brutalist playground</title>
+    <style>
+      @font-face {
+        font-family: "Inter";
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url("/fonts/inter-latin-400-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Inter";
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url("/fonts/inter-latin-700-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Inter";
+        font-style: normal;
+        font-weight: 900;
+        font-display: swap;
+        src: url("/fonts/inter-latin-900-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "JetBrains Mono";
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url("/fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "JetBrains Mono";
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url("/fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2");
+      }
 
-		body {
-			background: #f1f4f5;
-			font-family: Inter, sans-serif;
-			font-size: 20px;
-			-webkit-font-smoothing: antialiased;
-		}
+      :root {
+        --paper: #f1ece2;
+        --paper-2: #e7e0d1;
+        --ink: #0b0b0b;
+        --hot: #ff3b1f;
+        --acid: #c9ff3b;
+        --sky: #2c5cff;
+        --bubblegum: #ff5cd6;
+        --line: #0b0b0b;
+      }
 
-		a {
-			color: #2f79ff;
-			text-decoration: none;
-		}
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-		a:hover {
-			text-decoration: underline;
-		}
+      html,
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Inter", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+        cursor: none;
+      }
 
-		.stack {
-			width: 70%;
-			max-width: 1150px;
-			margin: 25px 0 150px 25px;
-			display: flex;
-			align-content: flex-start;
-		}
+      body {
+        background-image: radial-gradient(rgba(11, 11, 11, 0.07) 1px, transparent 1px);
+        background-size: 22px 22px;
+        background-attachment: fixed;
+      }
 
-		.paper {
-			position: relative;
-			flex-shrink: 0;
-			width: 100%;
+      /* Custom cursor */
+      .cur {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 28px;
+        height: 28px;
+        border: 2px solid var(--ink);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        transform: translate(-50%, -50%);
+        mix-blend-mode: difference;
+        background: transparent;
+        transition:
+          width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+          height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+          background 0.2s,
+          border-radius 0.25s;
+      }
+      .cur.dot {
+        width: 64px;
+        height: 64px;
+        background: var(--paper);
+      }
+      .cur.drag {
+        width: 80px;
+        height: 80px;
+        background: var(--hot);
+        border-color: var(--hot);
+      }
+      .cur::after {
+        content: attr(data-label);
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--ink);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      .cur.dot::after,
+      .cur.drag::after {
+        opacity: 1;
+      }
 
-			background: white;
-			border-radius: 3px;
-			box-shadow: 1px 2px 4px 1px rgba(0, 0, 0, .15);
-			padding: 100px;
-		}
+      /* Marquee */
+      .marquee {
+        border-top: 2px solid var(--ink);
+        border-bottom: 2px solid var(--ink);
+        overflow: hidden;
+        background: var(--ink);
+        color: var(--paper);
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .marquee-track {
+        display: inline-flex;
+        white-space: nowrap;
+        gap: 40px;
+        padding: 14px 0;
+        animation: scroll 30s linear infinite;
+      }
+      .marquee.reverse .marquee-track {
+        animation-direction: reverse;
+        animation-duration: 45s;
+      }
+      .marquee span::before {
+        content: "◉ ";
+        color: var(--hot);
+      }
+      @keyframes scroll {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
+        }
+      }
 
-		#paper1 {
-			top: 45px;
-			left: 50px;
-		}
+      /* Top nav */
+      nav.top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 22px 32px;
+        border-bottom: 2px solid var(--ink);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        position: relative;
+        z-index: 5;
+        background: var(--paper);
+      }
+      nav.top .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      nav.top .brand .mark {
+        width: 28px;
+        height: 28px;
+        background: var(--ink);
+        color: var(--paper);
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        font-weight: 900;
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+      }
+      nav.top .links {
+        display: flex;
+        gap: 28px;
+      }
+      nav.top .links a {
+        color: var(--ink);
+        text-decoration: none;
+        position: relative;
+      }
+      nav.top .links a:hover {
+        color: var(--hot);
+      }
+      nav.top .clock {
+        font-variant-numeric: tabular-nums;
+      }
 
-		#paper2 {
-			top: 20px;
-			left: -100%;
-		}
+      /* HERO */
+      .hero {
+        position: relative;
+        padding: 60px 32px 40px;
+        border-bottom: 2px solid var(--ink);
+        overflow: hidden;
+      }
+      .hero-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 30px;
+      }
+      .hero-meta .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border: 2px solid var(--ink);
+        border-radius: 999px;
+        background: var(--acid);
+        font-weight: 700;
+      }
+      .hero-meta .badge .ld {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--ink);
+        animation: blip 1.2s ease-in-out infinite;
+      }
+      @keyframes blip {
+        50% {
+          transform: scale(0.4);
+        }
+      }
 
-		#paper3 {
-			top: 25px;
-			transform: rotate(-4deg);
-			left: -200%;
-		}
+      .hero h1 {
+        font-family: "Inter", sans-serif;
+        font-weight: 900;
+        font-size: clamp(72px, 17vw, 280px);
+        line-height: 0.82;
+        letter-spacing: -0.06em;
+        text-transform: uppercase;
+        margin: 12px 0;
+      }
+      .hero h1 .row {
+        display: block;
+      }
+      .hero h1 .ch {
+        display: inline-block;
+        will-change: transform;
+        transform-origin: center;
+      }
+      .hero h1 .out {
+        -webkit-text-stroke: 3px var(--ink);
+        color: transparent;
+      }
+      .hero h1 .italic {
+        font-family: "Times New Roman", Georgia, serif;
+        font-style: italic;
+        font-weight: 400;
+        letter-spacing: -0.03em;
+        color: var(--hot);
+      }
+      .hero h1 .swap {
+        color: var(--sky);
+      }
+      .hero h1 .row.r2 {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .hero h1 .bigdot {
+        width: clamp(64px, 14vw, 220px);
+        height: clamp(64px, 14vw, 220px);
+        border-radius: 50%;
+        background: var(--hot);
+        display: inline-block;
+        animation: wobble 6s ease-in-out infinite;
+      }
+      @keyframes wobble {
+        0%,
+        100% {
+          border-radius: 50% 50% 50% 50%;
+          transform: scale(1);
+        }
+        25% {
+          border-radius: 60% 40% 55% 45%;
+          transform: scale(1.05);
+        }
+        50% {
+          border-radius: 45% 55% 40% 60%;
+          transform: scale(0.95);
+        }
+        75% {
+          border-radius: 55% 45% 60% 40%;
+          transform: scale(1.03);
+        }
+      }
 
-		#logos {
-			font-size: 50px;
-			font-weight: bold;
-			margin-bottom: 20px;
-			display: flex;
-		}
+      .hero-sub {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 32px;
+        margin-top: 40px;
+        padding-top: 28px;
+        border-top: 1px dashed var(--ink);
+      }
+      .hero-sub p {
+        font-family: "Times New Roman", Georgia, serif;
+        font-size: 18px;
+        line-height: 1.4;
+      }
+      .hero-sub .col-mono {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        line-height: 1.8;
+      }
+      .hero-sub .col-mono b {
+        background: var(--ink);
+        color: var(--paper);
+        padding: 1px 6px;
+      }
 
-		#caddy-logo,
-		#railway-logo {
-			height: 65px;
-		}
+      /* Floating stickers */
+      .stickers {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 3;
+      }
+      .sticker {
+        position: absolute;
+        pointer-events: auto;
+        user-select: none;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 700;
+        font-size: 12px;
+        text-transform: uppercase;
+        padding: 10px 14px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        border-radius: 6px;
+        box-shadow: 4px 4px 0 var(--ink);
+        will-change: transform;
+        transition: box-shadow 0.15s ease;
+        touch-action: none;
+      }
+      .sticker:active {
+        box-shadow: 1px 1px 0 var(--ink);
+      }
+      .sticker.s1 {
+        background: var(--acid);
+        top: 8%;
+        left: 4%;
+        transform: rotate(-9deg);
+      }
+      .sticker.s2 {
+        background: var(--hot);
+        color: var(--paper);
+        top: 18%;
+        right: 6%;
+        transform: rotate(7deg);
+      }
+      .sticker.s3 {
+        background: var(--sky);
+        color: var(--paper);
+        top: 70%;
+        left: 8%;
+        transform: rotate(-4deg);
+      }
+      .sticker.s4 {
+        background: var(--bubblegum);
+        color: var(--paper);
+        top: 60%;
+        right: 5%;
+        transform: rotate(11deg);
+      }
+      .sticker.s5 {
+        background: var(--paper);
+        top: 42%;
+        left: 50%;
+        transform: translateX(-50%) rotate(-2deg);
+      }
 
-		#caddy-logo {
-			margin-right: 15px;
-		}
+      /* Tool strip */
+      .tools {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-bottom: 2px solid var(--ink);
+      }
+      .tool {
+        padding: 28px;
+        border-right: 2px solid var(--ink);
+        position: relative;
+        overflow: hidden;
+        cursor: none;
+      }
+      .tool:last-child {
+        border-right: 0;
+      }
+      .tool .n {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .tool h3 {
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        margin: 18px 0 8px;
+        line-height: 0.95;
+      }
+      .tool p {
+        font-family: "Times New Roman", Georgia, serif;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      .tool .fill {
+        position: absolute;
+        inset: 0;
+        background: var(--ink);
+        color: var(--paper);
+        transform: translateY(100%);
+        transition: transform 0.5s cubic-bezier(0.6, 0.2, 0.1, 1);
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .tool:hover .fill {
+        transform: translateY(0);
+      }
+      .tool .fill .big {
+        font-size: 44px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        line-height: 0.95;
+      }
+      .tool .fill .small {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .tool .fill .small .hot {
+        color: var(--hot);
+      }
 
-		#caddy-logo .caddy-color {
-			fill: #005e7e;
-		}
+      /* PLAYGROUND */
+      .play {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        border-bottom: 2px solid var(--ink);
+      }
+      .play .left {
+        padding: 50px 32px;
+        border-right: 2px solid var(--ink);
+        position: relative;
+        min-height: 560px;
+        overflow: hidden;
+        background: linear-gradient(
+            135deg,
+            transparent 49%,
+            rgba(11, 11, 11, 0.06) 49%,
+            rgba(11, 11, 11, 0.06) 51%,
+            transparent 51%
+          )
+          0 0 / 14px 14px;
+      }
+      .play .right {
+        padding: 50px 32px;
+        position: relative;
+        background: var(--ink);
+        color: var(--paper);
+        overflow: hidden;
+      }
+      .play h2 {
+        font-size: clamp(48px, 6vw, 88px);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 0.9;
+        text-transform: uppercase;
+        margin-bottom: 24px;
+      }
+      .play h2 em {
+        font-family: "Times New Roman", Georgia, serif;
+        font-style: italic;
+        font-weight: 400;
+        color: var(--hot);
+        letter-spacing: -0.02em;
+      }
+      .play .lead {
+        font-family: "Times New Roman", Georgia, serif;
+        font-size: 22px;
+        line-height: 1.35;
+        max-width: 32ch;
+        margin-bottom: 36px;
+      }
+      .play .right .lead {
+        color: var(--paper-2);
+      }
 
-		h1 {
-			font-size: 20px;
-			margin-bottom: 50px;
-		}
+      .btn-magnet {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        padding: 18px 28px;
+        background: var(--ink);
+        color: var(--paper);
+        border: none;
+        border-radius: 999px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        cursor: none;
+        position: relative;
+        will-change: transform;
+        text-decoration: none;
+      }
+      .btn-magnet.hot {
+        background: var(--hot);
+      }
+      .btn-magnet.invert {
+        background: var(--paper);
+        color: var(--ink);
+      }
+      .btn-magnet .arr {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--paper);
+        color: var(--ink);
+        display: grid;
+        place-items: center;
+        transition: transform 0.3s ease;
+      }
+      .btn-magnet.invert .arr {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      .btn-magnet:hover .arr {
+        transform: rotate(45deg) scale(1.1);
+      }
 
-		h1 .emoji {
-			font-size: 150%;
-			vertical-align: middle;
-		}
+      .actions {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
 
-		h1 .lang {
-			margin-right: 1.25em;
-		}
+      /* SVG warp blob in left play panel */
+      .blob-wrap {
+        position: absolute;
+        right: -60px;
+        bottom: -60px;
+        width: 460px;
+        height: 460px;
+        pointer-events: none;
+      }
+      .blob-wrap svg {
+        width: 100%;
+        height: 100%;
+      }
+      .blob {
+        fill: var(--hot);
+        animation: blobspin 24s linear infinite;
+        transform-origin: 50% 50%;
+      }
+      @keyframes blobspin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
-		h2 {
-			font-size: 28px;
-			margin-top: 1.5em;
-		}
+      /* Synth bars in right play panel */
+      .bars {
+        position: absolute;
+        right: 32px;
+        top: 32px;
+        bottom: 32px;
+        width: 140px;
+        display: flex;
+        align-items: flex-end;
+        gap: 6px;
+      }
+      .bars span {
+        flex: 1;
+        background: linear-gradient(180deg, var(--acid), var(--hot));
+        border-radius: 2px 2px 0 0;
+        min-height: 8px;
+        will-change: height;
+      }
 
-		p,
-		ol,
-		ul {
-			color: #333;
-			line-height: 1.5em;
-		}
+      .ascii {
+        position: absolute;
+        left: 32px;
+        bottom: 28px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        line-height: 1;
+        color: var(--paper-2);
+        white-space: pre;
+        opacity: 0.8;
+      }
 
-		p {
-			margin: 1.5em 0;
-		}
+      /* DIRECTORY */
+      .dir {
+        padding: 60px 32px;
+        border-bottom: 2px solid var(--ink);
+      }
+      .dir-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 28px;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .dir-head h2 {
+        font-size: clamp(40px, 5vw, 72px);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        text-transform: uppercase;
+      }
+      .dir-head .hint {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .dir-head .hint kbd {
+        font-family: "JetBrains Mono", monospace;
+        background: var(--ink);
+        color: var(--paper);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+      }
 
-		ol,
-		ul {
-			margin: .5em 0 .5em 2em;
-		}
+      .rows {
+        border-top: 2px solid var(--ink);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 60px 1fr 200px 80px;
+        align-items: center;
+        gap: 24px;
+        padding: 22px 12px;
+        border-bottom: 1px solid var(--ink);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        text-decoration: none;
+        color: var(--ink);
+        position: relative;
+        overflow: hidden;
+        transition: padding 0.3s ease;
+      }
+      .row::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: var(--hot);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.4s cubic-bezier(0.6, 0.2, 0.1, 1);
+        z-index: 0;
+      }
+      .row:hover::before {
+        transform: scaleX(1);
+      }
+      .row:hover {
+        padding-left: 36px;
+        color: var(--paper);
+      }
+      .row > * {
+        position: relative;
+        z-index: 1;
+      }
+      .row .idx {
+        font-weight: 700;
+      }
+      .row .name {
+        font-family: "Inter", sans-serif;
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+      }
+      .row .desc {
+        font-family: "Times New Roman", Georgia, serif;
+        font-size: 15px;
+      }
+      .row .go {
+        justify-self: end;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border: 2px solid var(--ink);
+        border-radius: 50%;
+        transition:
+          transform 0.3s ease,
+          border-color 0.3s ease;
+      }
+      .row:hover .go {
+        transform: rotate(-45deg);
+        border-color: var(--paper);
+      }
 
-		ol li,
-		ul li {
-			margin-left: 1em;
-			margin-bottom: .5em;
-		}
+      /* CONFETTI canvas */
+      canvas#confetti {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 4;
+      }
 
-		li ol {
-			list-style-type: lower-alpha;
-		}
+      /* FOOTER */
+      footer {
+        padding: 60px 32px 40px;
+        background: var(--ink);
+        color: var(--paper);
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 32px;
+      }
+      footer .big {
+        font-size: clamp(48px, 7vw, 120px);
+        font-weight: 900;
+        letter-spacing: -0.05em;
+        line-height: 0.88;
+        text-transform: uppercase;
+      }
+      footer .big em {
+        font-family: "Times New Roman", serif;
+        font-style: italic;
+        font-weight: 400;
+        color: var(--acid);
+      }
+      footer .col h4 {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 14px;
+        color: var(--paper-2);
+      }
+      footer .col a {
+        display: block;
+        color: var(--paper);
+        text-decoration: none;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        padding: 4px 0;
+      }
+      footer .col a:hover {
+        color: var(--hot);
+      }
 
-		code {
-			color: #000;
-			font-family: Menlo, monospace;
-			background: #f0f0f0;
-			border-radius: 2px;
-			padding: 4px 8px;
-			font-size: 90%;
-		}
+      .signoff {
+        grid-column: 1 / -1;
+        margin-top: 40px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(241, 236, 226, 0.2);
+        display: flex;
+        justify-content: space-between;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--paper-2);
+      }
 
-		.warn {
-			color: #dd0000;
-		}
+      /* Easter: konami flash */
+      body.flash {
+        animation: flash 0.6s steps(2);
+      }
+      @keyframes flash {
+        0%,
+        100% {
+          filter: none;
+        }
+        50% {
+          filter: invert(1) hue-rotate(180deg);
+        }
+      }
 
-		footer {
-			color: #777;
-			font-size: 16px;
-			text-align: center;
-			max-width: 600px;
-			margin: 0 auto 50px;
-		}
+      @media (max-width: 900px) {
+        body {
+          cursor: auto;
+        }
+        .cur {
+          display: none;
+        }
+        nav.top .links {
+          display: none;
+        }
+        .hero-sub {
+          grid-template-columns: 1fr;
+        }
+        .tools {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .tool:nth-child(2) {
+          border-right: 0;
+        }
+        .tool:nth-child(1),
+        .tool:nth-child(2) {
+          border-bottom: 2px solid var(--ink);
+        }
+        .play {
+          grid-template-columns: 1fr;
+        }
+        .play .left {
+          border-right: 0;
+          border-bottom: 2px solid var(--ink);
+        }
+        .row {
+          grid-template-columns: 40px 1fr 50px;
+        }
+        .row .desc {
+          display: none;
+        }
+        footer {
+          grid-template-columns: 1fr;
+        }
+      }
 
-		#disclaimer {
-			font-size: 14px;
-			margin-top: 20px;
-			display: inline-block;
-			border-top: 1px solid #ccc;
-			padding: 20px;
-		}
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cur" id="cur" data-label="drag"></div>
+    <canvas id="confetti"></canvas>
 
-		@media (max-width: 1100px) {
-			.stack {
-				width: 85%;
-			}
-		}
+    <div class="marquee">
+      <div class="marquee-track" id="m1">
+        <span>SUITE · STATIC</span><span>SERVED FROM DISK</span><span>POWERED BY CADDY</span>
+        <span>NO BUILD STEP</span><span>NO FRAMEWORK</span><span>JUST FILES</span>
+        <span>SUITE · STATIC</span><span>SERVED FROM DISK</span><span>POWERED BY CADDY</span>
+        <span>NO BUILD STEP</span><span>NO FRAMEWORK</span><span>JUST FILES</span>
+      </div>
+    </div>
 
-		@media (max-width: 800px) {
-			.stack {
-				margin: 0 0 50px 0;
-				width: 100%;
-			}
+    <nav class="top">
+      <div class="brand">
+        <span class="mark">S</span>
+        <span>suite-static.localhost</span>
+      </div>
+      <div class="links">
+        <a href="/test.html" data-cursor="dot">Test page</a>
+        <a href="https://caddyserver.com" target="_blank" data-cursor="dot">Caddy ↗</a>
+        <a href="#playground" data-cursor="dot">Playground</a>
+        <a href="#directory" data-cursor="dot">Directory</a>
+      </div>
+      <div class="clock" id="clock">00:00:00</div>
+    </nav>
 
-			.paper {
-				padding: 50px;
-			}
+    <header class="hero">
+      <div class="hero-meta">
+        <span class="badge"><span class="ld"></span>LIVE · file_server online</span>
+        <span>EDITION №<b id="ed"></b> · <span id="today"></span></span>
+      </div>
 
-			#paper1,
-			#paper2 {
-				display: none;
-			}
+      <h1>
+        <span class="row r1"><span class="word" id="w1">STATIC</span></span>
+        <span class="row r2">
+          <span class="italic word" id="w2">but</span>
+          <span class="bigdot"></span>
+          <span class="out word" id="w3">never</span>
+        </span>
+        <span class="row r3"><span class="word swap" id="w4">BORING.</span></span>
+      </h1>
 
-			#paper3 {
-				left: 0;
-				transform: none;
-				top: 0;
-			}
+      <div class="hero-sub">
+        <p>
+          You are looking at the <em>root</em> of a static site served by Caddy &mdash; pure files,
+          no servers, no JavaScript framework. Everything that moves on this page is hand-written
+          CSS and a few hundred lines of vanilla JS, parked on disk.
+        </p>
+        <div class="col-mono">
+          STATUS &nbsp; <b>200&nbsp;OK</b><br />
+          PROTOCOL &nbsp; HTTP/2 + TLS<br />
+          ORIGIN &nbsp; suite-static.localhost<br />
+          ROOT &nbsp; ./infra/static_content<br />
+          BUILT WITH &nbsp; html · css · js
+        </div>
+        <div>
+          <button class="btn-magnet hot" id="shuffleBtn" data-cursor="dot">
+            Shuffle stickers
+            <span class="arr">↗</span>
+          </button>
+        </div>
+      </div>
 
-			#caddy {
-				max-width: 300px;
-				margin-bottom: 45px;
-				display: block;
-			}
-		}
-	</style>
-</head>
+      <div class="stickers" id="stickers">
+        <div class="sticker s1" data-cursor="drag">↖ drag me</div>
+        <div class="sticker s2" data-cursor="drag">CADDY ◉ 200</div>
+        <div class="sticker s3" data-cursor="drag">100% STATIC</div>
+        <div class="sticker s4" data-cursor="drag">FROM DISK ⬇</div>
+        <div class="sticker s5" data-cursor="drag">click anywhere</div>
+      </div>
+    </header>
 
-<body>
-	<div class="stack">
-		<div class="paper" id="paper1"></div>
-		<div class="paper" id="paper2"></div>
-		<div class="paper" id="paper3">
-			<div id="logos">
-				<a href="https://caddyserver.com/" title="Caddy Web Server">
-					<svg id="caddy-logo" viewBox="0 0 379 114" version="1.1" xmlns="http://www.w3.org/2000/svg"
-						xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/"
-						style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;">
-						<g transform="matrix(1,0,0,1,-35.5985,-67.948)">
-							<g transform="matrix(1.16548,0,0,1.10195,-124,-68.27)">
-								<g id="Light-Logo" serif:id="Light Logo"
-									transform="matrix(0.858013,0,0,0.907485,-3243.42,-1469.17)">
-									<g id="Logo" transform="matrix(1,0,0,1,21.4759,36.7359)">
-										<g id="Icon">
-											<g>
-												<g
-													transform="matrix(-0.191794,-0.715786,0.715786,-0.191794,4329.14,4673.64)">
-													<path
-														d="M3901.56,610.734C3893.53,610.261 3886.06,608.1 3879.2,604.877C3872.24,601.608 3866.04,597.093 3860.8,591.633C3858.71,589.457 3856.76,587.149 3854.97,584.709C3853.2,582.281 3851.57,579.733 3850.13,577.066C3845.89,569.224 3843.21,560.381 3842.89,550.868C3842.57,543.321 3843.64,536.055 3845.94,529.307C3848.37,522.203 3852.08,515.696 3856.83,510.049L3855.79,509.095C3850.39,514.54 3846.02,520.981 3842.9,528.125C3839.84,535.125 3838.03,542.781 3837.68,550.868C3837.34,561.391 3839.51,571.425 3843.79,580.306C3845.27,583.38 3847.03,586.304 3849.01,589.049C3851.01,591.806 3853.24,594.39 3855.69,596.742C3861.75,602.568 3869,607.19 3877.03,610.1C3884.66,612.867 3892.96,614.059 3901.56,613.552L3901.56,610.734Z"
-														style="fill:rgb(31,136,192);" />
-												</g>
-												<g
-													transform="matrix(-0.191794,-0.715786,0.715786,-0.191794,4329.14,4673.64)">
-													<path
-														d="M3875.69,496.573C3879.62,494.538 3883.8,492.897 3888.2,491.786C3892.49,490.704 3896.96,490.124 3901.56,490.032C3903.82,490.13 3906.03,490.332 3908.21,490.688C3917.13,492.147 3925.19,495.814 3932.31,500.683C3936.13,503.294 3939.59,506.335 3942.81,509.619C3947.09,513.98 3950.89,518.816 3953.85,524.232C3958.2,532.197 3960.96,541.186 3961.32,550.868C3961.61,558.748 3960.46,566.345 3957.88,573.322C3956.09,578.169 3953.7,582.753 3950.66,586.838C3947.22,591.461 3942.96,595.427 3938.27,598.769C3933.66,602.055 3928.53,604.619 3923.09,606.478C3922.37,606.721 3921.6,606.805 3920.93,607.167C3920.42,607.448 3920.14,607.854 3919.69,608.224L3920.37,610.389C3920.98,610.432 3921.47,610.573 3922.07,610.474C3922.86,610.344 3923.55,609.883 3924.28,609.566C3931.99,606.216 3938.82,601.355 3944.57,595.428C3947.02,592.903 3949.25,590.174 3951.31,587.319C3953.59,584.168 3955.66,580.853 3957.43,577.348C3961.47,569.34 3964.01,560.422 3964.36,550.868C3964.74,540.511 3962.66,530.628 3958.48,521.868C3955.57,515.775 3951.72,510.163 3946.95,505.478C3943.37,501.962 3939.26,498.99 3934.84,496.562C3926.88,492.192 3917.87,489.76 3908.37,489.229C3906.12,489.104 3903.86,489.054 3901.56,489.154C3896.87,489.06 3892.3,489.519 3887.89,490.397C3883.3,491.309 3878.89,492.683 3874.71,494.525L3875.69,496.573Z"
-														style="fill:rgb(31,136,192);" />
-												</g>
-											</g>
-											<g>
-												<g transform="matrix(-3.37109,-0.514565,0.514565,-3.37109,4078.07,1806.88)">
-													<path
-														d="M22,12C22,10.903 21.097,10 20,10C19.421,10 18.897,10.251 18.53,10.649C18.202,11.006 18,11.481 18,12C18,13.097 18.903,14 20,14C21.097,14 22,13.097 22,12Z"
-														style="fill:none;fill-rule:nonzero;stroke:rgb(31,136,192);stroke-width:1.05px;" />
-												</g>
-												<g transform="matrix(-5.33921,-5.26159,-3.12106,-6.96393,4073.87,1861.55)">
-													<path
-														d="M10.315,5.333C10.315,5.333 9.748,5.921 9.03,6.673C7.768,7.995 6.054,9.805 6.054,9.805L6.237,9.86C6.237,9.86 8.045,8.077 9.36,6.771C10.107,6.028 10.689,5.444 10.689,5.444L10.315,5.333Z"
-														style="fill:rgb(31,136,192);" />
-												</g>
-											</g>
-											<g id="Padlock" transform="matrix(3.11426,0,0,3.11426,3938.31,1737.25)">
-												<g>
-													<path
-														d="M9.876,21L18.162,21C18.625,21 19,20.625 19,20.162L19,11.838C19,11.375 18.625,11 18.162,11L5.838,11C5.375,11 5,11.375 5,11.838L5,16.758"
-														style="fill:none;stroke:rgb(34,182,56);stroke-width:1.89px;stroke-linecap:butt;stroke-linejoin:miter;" />
-													<path d="M8,11L8,7C8,4.806 9.806,3 12,3C14.194,3 16,4.806 16,7L16,11"
-														style="fill:none;fill-rule:nonzero;stroke:rgb(34,182,56);stroke-width:1.89px;" />
-												</g>
-											</g>
-											<g>
-												<g transform="matrix(5.30977,0.697415,-0.697415,5.30977,3852.72,1727.97)">
-													<path
-														d="M22,12C22,11.659 21.913,11.337 21.76,11.055C21.421,10.429 20.756,10 20,10C18.903,10 18,10.903 18,12C18,13.097 18.903,14 20,14C21.097,14 22,13.097 22,12Z"
-														style="fill:none;fill-rule:nonzero;stroke:rgb(31,136,192);stroke-width:0.98px;" />
-												</g>
-												<g transform="matrix(4.93114,2.49604,1.11018,5.44847,3921.41,1726.72)">
-													<path
-														d="M8.902,6.77C8.902,6.77 7.235,8.253 6.027,9.366C5.343,9.996 4.819,10.502 4.819,10.502L5.52,11.164C5.52,11.164 6.021,10.637 6.646,9.951C7.749,8.739 9.219,7.068 9.219,7.068L8.902,6.77Z"
-														style="fill:rgb(31,136,192);" />
-												</g>
-											</g>
-										</g>
-										<g id="Wordmark" transform="matrix(1.54159,0,0,2.8744,2710.6,709.804)">
-											<g id="y" transform="matrix(0.50291,0,0,0.281607,905.533,304.987)">
-												<path
-													d="M192.152,286.875L202.629,268.64C187.804,270.106 183.397,265.779 180.143,263.391C176.888,261.004 174.362,257.99 172.563,254.347C170.765,250.705 169.866,246.691 169.866,242.305L169.866,208.107L183.21,208.107L183.21,242.213C183.21,245.188 183.896,247.822 185.268,250.116C186.64,252.41 188.465,254.197 190.743,255.475C193.022,256.754 195.501,257.393 198.182,257.393C200.894,257.393 203.393,256.75 205.68,255.463C207.966,254.177 209.799,252.391 211.178,250.105C212.558,247.818 213.248,245.188 213.248,242.213L213.248,208.107L226.545,208.107L226.545,242.305C226.545,246.707 225.378,258.46 218.079,268.64C215.735,271.909 207.835,286.875 207.835,286.875L192.152,286.875Z"
-													style="fill:rgb(47,47,47);fill-rule:nonzero;" />
-											</g>
-											<g id="add" transform="matrix(0.525075,0,0,0.281607,801.871,304.987)">
-												<g transform="matrix(116.242,0,0,116.242,161.846,267.39)">
-													<path
-														d="M0.276,0.012C0.227,0.012 0.186,0 0.15,-0.024C0.115,-0.048 0.088,-0.08 0.069,-0.12C0.05,-0.161 0.04,-0.205 0.04,-0.254C0.04,-0.305 0.051,-0.35 0.072,-0.39C0.094,-0.431 0.125,-0.463 0.165,-0.487C0.205,-0.51 0.254,-0.522 0.31,-0.522C0.366,-0.522 0.413,-0.51 0.452,-0.486C0.491,-0.463 0.521,-0.431 0.542,-0.39C0.562,-0.35 0.573,-0.305 0.573,-0.256L0.573,-0L0.458,-0L0.458,-0.095L0.456,-0.095C0.446,-0.076 0.433,-0.058 0.417,-0.042C0.401,-0.026 0.381,-0.013 0.358,-0.003C0.335,0.007 0.307,0.012 0.276,0.012ZM0.307,-0.086C0.337,-0.086 0.363,-0.093 0.386,-0.108C0.408,-0.123 0.426,-0.144 0.438,-0.17C0.45,-0.195 0.456,-0.224 0.456,-0.256C0.456,-0.288 0.45,-0.317 0.438,-0.342C0.426,-0.367 0.409,-0.387 0.387,-0.402C0.365,-0.417 0.338,-0.424 0.308,-0.424C0.276,-0.424 0.249,-0.417 0.226,-0.402C0.204,-0.387 0.186,-0.366 0.174,-0.341C0.162,-0.315 0.156,-0.287 0.156,-0.255C0.156,-0.224 0.162,-0.195 0.174,-0.169C0.186,-0.144 0.203,-0.123 0.226,-0.108C0.248,-0.093 0.275,-0.086 0.307,-0.086Z"
-														style="fill:rgb(47,47,47);fill-rule:nonzero;" />
-												</g>
-												<g transform="matrix(116.242,0,0,116.242,226.592,267.39)">
-													<path
-														d="M0.306,0.012C0.265,0.012 0.229,0.006 0.196,-0.008C0.163,-0.021 0.135,-0.039 0.112,-0.064C0.089,-0.088 0.071,-0.117 0.059,-0.151C0.046,-0.185 0.04,-0.222 0.04,-0.263C0.04,-0.315 0.051,-0.36 0.072,-0.399C0.093,-0.437 0.122,-0.468 0.159,-0.489C0.196,-0.511 0.239,-0.522 0.287,-0.522C0.311,-0.522 0.333,-0.518 0.355,-0.511C0.377,-0.504 0.396,-0.493 0.413,-0.48C0.431,-0.466 0.445,-0.451 0.455,-0.433L0.456,-0.433L0.456,-0.73L0.571,-0.73L0.571,-0.261C0.571,-0.205 0.56,-0.156 0.537,-0.115C0.515,-0.074 0.484,-0.043 0.444,-0.021C0.405,0.001 0.358,0.012 0.306,0.012ZM0.306,-0.086C0.335,-0.086 0.361,-0.093 0.384,-0.107C0.406,-0.122 0.423,-0.141 0.436,-0.167C0.448,-0.192 0.455,-0.221 0.455,-0.255C0.455,-0.288 0.448,-0.317 0.436,-0.343C0.423,-0.368 0.406,-0.388 0.383,-0.402C0.361,-0.417 0.335,-0.424 0.305,-0.424C0.276,-0.424 0.251,-0.417 0.228,-0.402C0.206,-0.387 0.188,-0.368 0.175,-0.342C0.163,-0.317 0.156,-0.288 0.156,-0.255C0.156,-0.222 0.163,-0.193 0.175,-0.167C0.188,-0.142 0.206,-0.122 0.229,-0.108C0.251,-0.093 0.277,-0.086 0.306,-0.086Z"
-														style="fill:rgb(47,47,47);fill-rule:nonzero;" />
-												</g>
-												<g transform="matrix(116.242,0,0,116.242,290.293,267.39)">
-													<path
-														d="M0.306,0.012C0.265,0.012 0.229,0.006 0.196,-0.008C0.163,-0.021 0.135,-0.039 0.112,-0.064C0.089,-0.088 0.071,-0.117 0.059,-0.151C0.046,-0.185 0.04,-0.222 0.04,-0.263C0.04,-0.315 0.051,-0.36 0.072,-0.399C0.093,-0.437 0.122,-0.468 0.159,-0.489C0.196,-0.511 0.239,-0.522 0.287,-0.522C0.311,-0.522 0.333,-0.518 0.355,-0.511C0.377,-0.504 0.396,-0.493 0.413,-0.48C0.431,-0.466 0.445,-0.451 0.455,-0.433L0.456,-0.433L0.456,-0.73L0.571,-0.73L0.571,-0.261C0.571,-0.205 0.56,-0.156 0.537,-0.115C0.515,-0.074 0.484,-0.043 0.444,-0.021C0.405,0.001 0.358,0.012 0.306,0.012ZM0.306,-0.086C0.335,-0.086 0.361,-0.093 0.384,-0.107C0.406,-0.122 0.423,-0.141 0.436,-0.167C0.448,-0.192 0.455,-0.221 0.455,-0.255C0.455,-0.288 0.448,-0.317 0.436,-0.343C0.423,-0.368 0.406,-0.388 0.383,-0.402C0.361,-0.417 0.335,-0.424 0.305,-0.424C0.276,-0.424 0.251,-0.417 0.228,-0.402C0.206,-0.387 0.188,-0.368 0.175,-0.342C0.163,-0.317 0.156,-0.288 0.156,-0.255C0.156,-0.222 0.163,-0.193 0.175,-0.167C0.188,-0.142 0.206,-0.122 0.229,-0.108C0.251,-0.093 0.277,-0.086 0.306,-0.086Z"
-														style="fill:rgb(47,47,47);fill-rule:nonzero;" />
-												</g>
-											</g>
-											<g id="c"
-												transform="matrix(-0.0716462,0.31304,-0.583685,-0.0384251,1489.76,-444.051)">
-												<path
-													d="M2668.11,700.4C2666.79,703.699 2666.12,707.216 2666.12,710.766C2666.12,726.268 2678.71,738.854 2694.21,738.854C2709.71,738.854 2722.3,726.268 2722.3,710.766C2722.3,704.111 2719.93,697.672 2715.63,692.597L2707.63,699.378C2710.33,702.559 2711.57,706.602 2711.81,710.766C2712.2,717.38 2706.61,724.52 2697.27,726.637C2683.9,728.581 2676.61,720.482 2676.61,710.766C2676.61,708.541 2677.03,706.336 2677.85,704.269L2668.11,700.4Z"
-													style="fill:rgb(46,46,46);" />
-											</g>
-										</g>
-									</g>
-									<g id="R" transform="matrix(0.497016,0,0,0.497016,2390.38,823.152)">
-										<g transform="matrix(1,0,0,1,-0.10786,0.450801)">
-											<g transform="matrix(12.1247,0,0,12.1247,3862.61,1929.9)">
-												<path
-													d="M0.073,-0L0.073,-0.7L0.383,-0.7C0.428,-0.7 0.469,-0.69 0.506,-0.67C0.543,-0.651 0.572,-0.623 0.594,-0.588C0.616,-0.553 0.627,-0.512 0.627,-0.465C0.627,-0.418 0.615,-0.377 0.592,-0.342C0.569,-0.306 0.539,-0.279 0.501,-0.259L0.57,-0.128C0.574,-0.12 0.579,-0.115 0.584,-0.111C0.59,-0.107 0.596,-0.106 0.605,-0.106L0.664,-0.106L0.664,-0L0.587,-0C0.56,-0 0.535,-0.007 0.514,-0.02C0.493,-0.034 0.476,-0.052 0.463,-0.075L0.381,-0.232C0.375,-0.231 0.368,-0.231 0.361,-0.231C0.354,-0.231 0.347,-0.231 0.34,-0.231L0.192,-0.231L0.192,-0L0.073,-0ZM0.192,-0.336L0.368,-0.336C0.394,-0.336 0.417,-0.341 0.438,-0.351C0.459,-0.361 0.476,-0.376 0.489,-0.396C0.501,-0.415 0.507,-0.438 0.507,-0.465C0.507,-0.492 0.501,-0.516 0.488,-0.535C0.475,-0.554 0.459,-0.569 0.438,-0.579C0.417,-0.59 0.394,-0.595 0.369,-0.595L0.192,-0.595L0.192,-0.336Z"
-													style="fill:rgb(46,46,46);fill-rule:nonzero;" />
-											</g>
-										</g>
-										<g transform="matrix(1,0,0,1,0.278569,0.101881)">
-											<circle cx="3866.43" cy="1926.14" r="8.923"
-												style="fill:none;stroke:rgb(46,46,46);stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;" />
-										</g>
-									</g>
-								</g>
-							</g>
-						</g>
-					</svg>
-				</a>
-				+
-				 <a href="https://railway.com">
-					<svg id="railway-logo" viewBox="0 0 3733 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path
-							d="M323.27 461.245a357.915 357.915 0 0 0-3.27 35.448h534.737c-1.868-3.648-4.376-6.937-6.906-10.156-91.417-118.106-140.593-107.866-210.938-110.866-23.453-.965-39.359-1.352-132.713-1.352-49.965 0-104.286.127-157.182.267-6.847 18.483-13.451 36.399-16.667 50.972h274.018v35.687H323.27Zm535.681 71.171H320.275c.564 9.522 1.452 18.918 2.734 28.187h497.33c22.171 0 34.581-12.579 38.612-28.187ZM350.949 657.96S433.397 860.402 671.629 864c142.389 0 264.736-84.567 320.31-206.04h-640.99Z"
-							fill="#100F13" />
-						<path
-							d="M671.624 160c-131.656 0-246.223 72.298-306.723 179.17 47.279-.098 139.359-.155 139.359-.155h.021v-.035c108.837 0 112.882.486 134.144 1.374l13.164.486c45.857 1.528 102.22 6.451 146.568 40.005 24.074 18.199 58.831 58.366 79.55 86.982 19.154 26.469 24.665 56.895 11.642 86.047-11.988 26.792-37.78 42.773-69.014 42.773H331.474s2.91 12.336 7.274 25.953h667.312A351.08 351.08 0 0 0 1024 512.15C1024.01 317.682 866.241 160 671.624 160Zm706.506 499h83.04V519.781h60.59L1596.17 659h91.66l-83.42-152.642c44.68-19.176 69.42-58.104 69.42-111.797 0-78.047-51.58-128.288-140.75-128.288h-154.95V659Zm83.04-205.952V334.156h55.99c47.94 0 71.14 21.286 71.14 60.405 0 38.928-23.2 58.487-70.76 58.487h-56.37Zm353.8 211.513c43.53 0 71.71-18.984 86.1-46.406h2.3V659h77.47V460.335c0-70.184-59.45-99.716-125.03-99.716-70.57 0-116.97 33.75-128.29 87.443l75.56 6.137c5.56-19.56 23.01-33.942 52.35-33.942 27.8 0 43.72 13.999 43.72 38.161v1.15c0 18.985-20.14 21.477-71.34 26.463-58.29 5.37-110.64 24.929-110.64 90.703 0 58.296 41.61 87.827 97.8 87.827Zm23.39-56.378c-25.12 0-43.15-11.697-43.15-34.133 0-23.012 18.99-34.326 47.75-38.353 17.84-2.492 46.98-6.711 56.76-13.231v31.257c0 30.874-25.5 54.46-61.36 54.46ZM2044.22 659h81.69V364.455h-81.69V659Zm41.03-332.514c24.36 0 44.3-18.601 44.3-41.421 0-22.627-19.94-41.228-44.3-41.228-24.16 0-44.1 18.601-44.1 41.228 0 22.82 19.94 41.421 44.1 41.421Zm187.79-60.213h-81.69V659h81.69V266.273ZM2396.58 659h86.29l50.63-185.241h3.64L2587.76 659h86.49l79.96-294.545h-82.45l-44.88 196.747h-2.49l-48.32-196.747h-81.12l-47.56 197.897h-2.68l-45.64-197.897h-82.65L2396.58 659Zm485.2 5.561c43.53 0 71.72-18.984 86.1-46.406h2.3V659h77.48V460.335c0-70.184-59.45-99.716-125.03-99.716-70.57 0-116.98 33.75-128.29 87.443l75.55 6.137c5.56-19.56 23.01-33.942 52.35-33.942 27.81 0 43.73 13.999 43.73 38.161v1.15c0 18.985-20.14 21.477-71.34 26.463-58.3 5.37-110.65 24.929-110.65 90.703 0 58.296 41.62 87.827 97.8 87.827Zm23.4-56.378c-25.12 0-43.15-11.697-43.15-34.133 0-23.012 18.99-34.326 47.75-38.353 17.83-2.492 46.98-6.711 56.76-13.231v31.257c0 30.874-25.5 54.46-61.36 54.46Zm245.74 161.272c60.79 0 93-31.066 109.69-78.623l114.48-325.994-86.49-.383-61.55 216.306h-3.07L3163 364.455h-85.91l105.66 302.983-4.79 12.464c-10.74 27.614-31.26 28.956-60.02 20.135l-18.41 60.98c11.69 4.986 30.68 8.438 51.39 8.438Z"
-							fill="#100F13" />
-					</svg>
-				 </a>
-			</div>
+    <section class="tools">
+      <div class="tool" data-cursor="dot">
+        <div class="n">01 / DEPLOY</div>
+        <h3>Drop a file.<br />Serve a file.</h3>
+        <p>file_server reads bytes from disk. That's the whole pipeline.</p>
+        <div class="fill">
+          <div class="small">▮▮▮▮▮▮▮▮▮▮ <span class="hot">READY</span></div>
+          <div class="big">0&nbsp;ms<br />build.</div>
+        </div>
+      </div>
+      <div class="tool" data-cursor="dot">
+        <div class="n">02 / TLS</div>
+        <h3>HTTPS by<br />default.</h3>
+        <p>Local CA provisions certs on first request. Browsers trust them.</p>
+        <div class="fill">
+          <div class="small">▮▮▮▮▮▮▮▮▮▮ <span class="hot">TRUSTED</span></div>
+          <div class="big">auto<br />certs.</div>
+        </div>
+      </div>
+      <div class="tool" data-cursor="dot">
+        <div class="n">03 / SPEED</div>
+        <h3>Read &amp; ship<br />no detours.</h3>
+        <p>No SSR, no bundler, no runtime. Bytes go from disk to browser.</p>
+        <div class="fill">
+          <div class="small">▮▮▮▮▮▮▮▮▮▮ <span class="hot">FAST</span></div>
+          <div class="big" id="ttfbBig">— ms<br />ttfb.</div>
+        </div>
+      </div>
+      <div class="tool" data-cursor="dot">
+        <div class="n">04 / FREEDOM</div>
+        <h3>Any HTML.<br />Any CSS.</h3>
+        <p>Brutalist, glassmorphism, ASCII art &mdash; the platform doesn't care.</p>
+        <div class="fill">
+          <div class="small">▮▮▮▮▮▮▮▮▮▮ <span class="hot">UNLOCKED</span></div>
+          <div class="big">html<br />only.</div>
+        </div>
+      </div>
+    </section>
 
-			<h1>
-				<!-- English --> <span class="lang">Congratulations!</span>
-				<!-- Japanese --> <span class="lang">おめでとう!</span>
-				<!-- Spanish --> <span class="lang">¡Felicidades!</span>
-				<!-- Chinese --> <span class="lang">恭喜!</span>
-				<!-- Hindi --> <span class="lang">बधाई हो!</span>
-				<!-- Russian --> <span class="lang">Поздравляю!</span>
-				<!-- Ukrainian --> <span class="lang">Вітаю!</span>
-				<!-- Dutch --> <span class="lang">Gefeliciteerd!</span>
-				<!-- German --> <span class="lang">Glückwunsch!</span>
-				<span class="emoji">🎊</span>
-			</h1>
+    <section class="play" id="playground">
+      <div class="left">
+        <h2>This panel <em>is</em><br />the playground.</h2>
+        <p class="lead">
+          Move your cursor. Drag the stickers. Click anywhere on the page to drop confetti. Hit
+          <b>S</b> to shuffle. Hit <b>I</b> to invert. Type the Konami code for the full circus.
+        </p>
+        <div class="actions">
+          <a class="btn-magnet" href="/test.html" data-cursor="dot">
+            Open /test.html
+            <span class="arr">→</span>
+          </a>
+          <button class="btn-magnet invert" id="confettiBtn" data-cursor="dot">
+            Drop confetti
+            <span class="arr">↓</span>
+          </button>
+        </div>
 
-			<p>
-				Your web server is working. Now make it work for you. 💪
-			</p>
-			<p>
-				<a href="https://caddyserver.com">Caddy</a> is ready to serve your site on <a href="https://railway.com">Railway</a>!
-			</p>
-			<ol>
-				<li>Add or remove Caddy plugins by using the <code>CADDY_PLUGINS</code> variable in your Railway project.</li>
-				<li>"Eject" (or fork) this template into your own repository.</li>
-				<li>You can serve a static site by replacing the contents of this "www" folder.</li>
-				<li>Change the Caddy config by editing the <code>Caddyfile</code> and pushing.</li>
-				<li>Learn more about using this template from the <a href="https://github.com/caddyserver/caddy-railway">README</a>.</li>
-			</ol>
-			<p>
-				Visit Caddy on:
-				<b><a href="https://github.com/caddyserver/caddy" title="Caddy on GitHub">GitHub</a></b>
-				or
-				<b><a href="https://x.com/caddyserver" title="@caddyserver on X">X (formerly Twitter)</a></b>
-				or
-				<b><a href="https://caddy.community/" title="Caddy forums">Our Forum</a></b>
-			</p>
-		</div>
-	</div>
+        <div class="blob-wrap">
+          <svg viewBox="0 0 400 400" aria-hidden="true">
+            <path
+              class="blob"
+              id="blobPath"
+              d="M320,210 Q310,310 210,320 Q90,310 80,200 Q90,90 200,80 Q310,90 320,210 Z"
+            />
+          </svg>
+        </div>
+      </div>
 
-	<footer>
-		&copy; Copyright The Caddy Authors
+      <div class="right">
+        <h2>Bytes <em>in motion</em>.</h2>
+        <p class="lead">
+          The synth on the right is fake. The latency below is real. Caddy doesn't know the
+          difference &mdash; it just hands over files.
+        </p>
 
-		<div id="disclaimer">
-			The Caddy project is not responsible for the content, disposition, or behavior of this Web
-			property, which is independently owned and maintained. For inquiries, please contact the site owner or
-			hosting provider.
-		</div>
-	</footer>
+        <div
+          style="
+            margin-top: 36px;
+            font-family: &quot;JetBrains Mono&quot;, monospace;
+            font-size: 13px;
+            line-height: 1.9;
+          "
+        >
+          <div>↳ host &nbsp; <b id="host">localhost</b></div>
+          <div>↳ ttfb &nbsp; <b id="ttfb">— ms</b></div>
+          <div>↳ payload &nbsp; <b id="bytes">— KB</b></div>
+          <div>↳ session reloads &nbsp; <b id="reloads">1</b></div>
+        </div>
 
-</body>
+        <div class="bars" id="bars"></div>
+        <pre class="ascii">
+  ┌──────────────────┐
+  │   serve(./)      │
+  │   → 200 OK       │
+  │   → text/html    │
+  └──────────────────┘</pre
+        >
+      </div>
+    </section>
 
+    <section class="dir" id="directory">
+      <div class="dir-head">
+        <h2>Try the other<br />routes.</h2>
+        <span class="hint">hover the row &nbsp; <kbd>↵</kbd> to open</span>
+      </div>
+      <div class="rows">
+        <a class="row" href="/test.html" data-cursor="dot">
+          <span class="idx">01</span>
+          <span class="name" data-scramble>/test.html</span>
+          <span class="desc"
+            >The original demo &mdash; dark mode, terminal vibes, glowing cursor.</span
+          >
+          <span class="go">↗</span>
+        </a>
+        <a class="row" href="/" data-cursor="dot">
+          <span class="idx">02</span>
+          <span class="name" data-scramble>/</span>
+          <span class="desc">You are here. Brutalist editorial × physics playground.</span>
+          <span class="go">↻</span>
+        </a>
+        <a class="row" href="/fonts/inter-latin-900-normal.woff2" data-cursor="dot">
+          <span class="idx">03</span>
+          <span class="name" data-scramble>/fonts/*.woff2</span>
+          <span class="desc">All fonts are local. Inter + JetBrains Mono. Latin subset.</span>
+          <span class="go">↗</span>
+        </a>
+        <a
+          class="row"
+          href="https://caddyserver.com/docs/caddyfile/directives/file_server"
+          target="_blank"
+          data-cursor="dot"
+        >
+          <span class="idx">04</span>
+          <span class="name" data-scramble>file_server { }</span>
+          <span class="desc">The Caddy directive that makes all of this happen. One line.</span>
+          <span class="go">↗</span>
+        </a>
+      </div>
+    </section>
+
+    <div class="marquee reverse">
+      <div class="marquee-track">
+        <span>HTML</span><span>CSS</span><span>JS</span><span>WOFF2</span><span>SVG</span
+        ><span>PNG</span><span>JPG</span><span>JSON</span><span>TXT</span><span>WASM</span
+        ><span>MP4</span><span>WEBP</span> <span>HTML</span><span>CSS</span><span>JS</span
+        ><span>WOFF2</span><span>SVG</span><span>PNG</span><span>JPG</span><span>JSON</span
+        ><span>TXT</span><span>WASM</span><span>MP4</span><span>WEBP</span>
+      </div>
+    </div>
+
+    <footer>
+      <div class="big">
+        ship<br />
+        <em>boring</em><br />
+        files.<br />
+        feel<br />
+        fast.
+      </div>
+      <div class="col">
+        <h4>Routes</h4>
+        <a href="/">/</a>
+        <a href="/test.html">/test.html</a>
+        <a href="/fonts/inter-latin-900-normal.woff2">/fonts/&hellip;</a>
+      </div>
+      <div class="col">
+        <h4>Stack</h4>
+        <a href="https://caddyserver.com" target="_blank">Caddy</a>
+        <a href="https://devenv.sh" target="_blank">devenv.sh</a>
+        <a href="https://fonts.google.com/specimen/Inter" target="_blank">Inter</a>
+        <a href="https://www.jetbrains.com/lp/mono/" target="_blank">JetBrains Mono</a>
+      </div>
+      <div class="signoff">
+        <span>SUITE · STATIC · <span id="year"></span></span>
+        <span>file_server { root ./infra/static_content }</span>
+        <span id="builtAt"></span>
+      </div>
+    </footer>
+
+    <script>
+      // -------- CURSOR --------
+      const cur = document.getElementById("cur");
+      let mx = innerWidth / 2,
+        my = innerHeight / 2,
+        cx = mx,
+        cy = my;
+      addEventListener("pointermove", (e) => {
+        mx = e.clientX;
+        my = e.clientY;
+      });
+      function curLoop() {
+        cx += (mx - cx) * 0.22;
+        cy += (my - cy) * 0.22;
+        cur.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+        requestAnimationFrame(curLoop);
+      }
+      curLoop();
+      document.querySelectorAll("[data-cursor]").forEach((el) => {
+        el.addEventListener("pointerenter", () => {
+          const m = el.dataset.cursor;
+          cur.classList.add(m);
+          cur.dataset.label = el.dataset.cursorLabel || m;
+        });
+        el.addEventListener("pointerleave", () => {
+          cur.className = "cur";
+        });
+      });
+
+      // -------- HERO LETTER WARP --------
+      const words = ["w1", "w2", "w3", "w4"].map((id) => document.getElementById(id));
+      words.forEach((w) => {
+        const txt = w.textContent;
+        w.textContent = "";
+        [...txt].forEach((c) => {
+          const s = document.createElement("span");
+          s.className = "ch";
+          s.textContent = c === " " ? "\u00a0" : c;
+          w.appendChild(s);
+        });
+      });
+      const chars = document.querySelectorAll(".hero h1 .ch");
+      addEventListener("pointermove", (e) => {
+        chars.forEach((ch) => {
+          const r = ch.getBoundingClientRect();
+          const dx = e.clientX - (r.left + r.width / 2);
+          const dy = e.clientY - (r.top + r.height / 2);
+          const d = Math.hypot(dx, dy);
+          const max = 220;
+          if (d < max) {
+            const f = (1 - d / max) * 22;
+            ch.style.transform = `translate(${(-dx / d) * f}px, ${(-dy / d) * f}px)`;
+          } else {
+            ch.style.transform = "";
+          }
+        });
+      });
+
+      // -------- STICKERS: draggable + shuffle --------
+      const stickers = document.querySelectorAll(".sticker");
+      stickers.forEach((s) => {
+        let dx = 0,
+          dy = 0,
+          sx = 0,
+          sy = 0,
+          dragging = false;
+        const base = s.style.transform || getComputedStyle(s).transform;
+        let rot = (Math.random() - 0.5) * 18;
+        s.style.transform = `${getInitialTransform(s)} translate(0px, 0px)`;
+        s.addEventListener("pointerdown", (e) => {
+          dragging = true;
+          s.setPointerCapture(e.pointerId);
+          sx = e.clientX - dx;
+          sy = e.clientY - dy;
+          s.style.zIndex = 20;
+          s.style.transition = "none";
+        });
+        s.addEventListener("pointermove", (e) => {
+          if (!dragging) return;
+          dx = e.clientX - sx;
+          dy = e.clientY - sy;
+          s.style.transform = `${getInitialTransform(s)} translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+        });
+        s.addEventListener("pointerup", () => {
+          dragging = false;
+        });
+        s.addEventListener("pointercancel", () => {
+          dragging = false;
+        });
+      });
+      function getInitialTransform(el) {
+        // Strip translate so we re-apply from drag. Keep rotate from class.
+        const cs = el.classList;
+        if (cs.contains("s1")) return "rotate(-9deg)";
+        if (cs.contains("s2")) return "rotate(7deg)";
+        if (cs.contains("s3")) return "rotate(-4deg)";
+        if (cs.contains("s4")) return "rotate(11deg)";
+        if (cs.contains("s5")) return "translateX(-50%) rotate(-2deg)";
+        return "";
+      }
+      function shuffle() {
+        document.querySelectorAll(".sticker").forEach((s) => {
+          const r = (Math.random() - 0.5) * 30;
+          const dx = (Math.random() - 0.5) * 200;
+          const dy = (Math.random() - 0.5) * 100;
+          s.style.transition = "transform 0.7s cubic-bezier(.6,.2,.1,1)";
+          s.style.transform = `${getInitialTransform(s)} translate(${dx}px, ${dy}px) rotate(${r}deg)`;
+        });
+      }
+      document.getElementById("shuffleBtn").addEventListener("click", shuffle);
+
+      // -------- MAGNETIC BUTTONS --------
+      document.querySelectorAll(".btn-magnet").forEach((b) => {
+        b.addEventListener("pointermove", (e) => {
+          const r = b.getBoundingClientRect();
+          const x = e.clientX - r.left - r.width / 2;
+          const y = e.clientY - r.top - r.height / 2;
+          b.style.transform = `translate(${x * 0.25}px, ${y * 0.35}px)`;
+        });
+        b.addEventListener("pointerleave", () => {
+          b.style.transform = "";
+        });
+      });
+
+      // -------- CONFETTI --------
+      const cnv = document.getElementById("confetti");
+      const ctx = cnv.getContext("2d");
+      let parts = [];
+      function resize() {
+        cnv.width = innerWidth;
+        cnv.height = innerHeight;
+      }
+      resize();
+      addEventListener("resize", resize);
+      const palette = ["#ff3b1f", "#c9ff3b", "#2c5cff", "#ff5cd6", "#0b0b0b", "#f1ece2"];
+      function burst(x, y, n = 28) {
+        for (let i = 0; i < n; i++) {
+          parts.push({
+            x,
+            y,
+            vx: (Math.random() - 0.5) * 12,
+            vy: -Math.random() * 14 - 2,
+            r: 4 + Math.random() * 8,
+            rot: Math.random() * Math.PI,
+            vr: (Math.random() - 0.5) * 0.3,
+            color: palette[Math.floor(Math.random() * palette.length)],
+            shape: Math.random() < 0.5 ? "sq" : "ci",
+            life: 0,
+          });
+        }
+      }
+      function tick() {
+        ctx.clearRect(0, 0, cnv.width, cnv.height);
+        parts = parts.filter((p) => p.y < cnv.height + 40);
+        parts.forEach((p) => {
+          p.vy += 0.55;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rot += p.vr;
+          p.life++;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          if (p.shape === "sq") ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r);
+          else {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.r / 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        });
+        requestAnimationFrame(tick);
+      }
+      tick();
+      addEventListener("click", (e) => {
+        // ignore clicks on interactive elements that have their own behavior we don't want to interrupt
+        burst(e.clientX, e.clientY, 22);
+      });
+      document.getElementById("confettiBtn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        for (let i = 0; i < 6; i++) {
+          setTimeout(() => burst(innerWidth / 2, innerHeight - 40, 36), i * 80);
+        }
+      });
+
+      // -------- SYNTH BARS --------
+      const barsEl = document.getElementById("bars");
+      const N = 18;
+      const barEls = [];
+      for (let i = 0; i < N; i++) {
+        const b = document.createElement("span");
+        barsEl.appendChild(b);
+        barEls.push(b);
+      }
+      let t = 0;
+      function bars() {
+        t += 0.06;
+        barEls.forEach((b, i) => {
+          const h = (Math.sin(t * 1.3 + i * 0.35) + Math.sin(t * 0.7 + i * 0.9) + 2) / 4;
+          b.style.height = 10 + h * 90 + "%";
+        });
+        requestAnimationFrame(bars);
+      }
+      bars();
+
+      // -------- BLOB MORPH --------
+      const blobPath = document.getElementById("blobPath");
+      function pt(angle, r) {
+        return [200 + Math.cos(angle) * r, 200 + Math.sin(angle) * r];
+      }
+      let bt = 0;
+      function morph() {
+        bt += 0.012;
+        const pts = [];
+        const seg = 8;
+        for (let i = 0; i < seg; i++) {
+          const a = (i / seg) * Math.PI * 2;
+          const r = 130 + Math.sin(bt + i * 1.7) * 18 + Math.cos(bt * 1.3 + i) * 10;
+          pts.push(pt(a, r));
+        }
+        let d = `M${pts[0][0]},${pts[0][1]}`;
+        for (let i = 0; i < pts.length; i++) {
+          const cur = pts[i];
+          const next = pts[(i + 1) % pts.length];
+          const mx = (cur[0] + next[0]) / 2;
+          const my = (cur[1] + next[1]) / 2;
+          d += ` Q${cur[0]},${cur[1]} ${mx},${my}`;
+        }
+        d += " Z";
+        blobPath.setAttribute("d", d);
+        requestAnimationFrame(morph);
+      }
+      morph();
+
+      // -------- SCRAMBLE on hover --------
+      const ascii = "!<>-_\\/[]{}—=+*^?#";
+      document.querySelectorAll("[data-scramble]").forEach((el) => {
+        const orig = el.textContent;
+        let raf;
+        el.addEventListener("pointerenter", () => {
+          let step = 0;
+          cancelAnimationFrame(raf);
+          const run = () => {
+            step++;
+            const reveal = Math.min(orig.length, Math.floor(step / 1.5));
+            let s = "";
+            for (let i = 0; i < orig.length; i++) {
+              if (i < reveal) s += orig[i];
+              else s += ascii[Math.floor(Math.random() * ascii.length)];
+            }
+            el.textContent = s;
+            if (reveal < orig.length) raf = requestAnimationFrame(run);
+            else el.textContent = orig;
+          };
+          run();
+        });
+      });
+
+      // -------- CLOCK / META --------
+      const pad = (n) => String(n).padStart(2, "0");
+      function clock() {
+        const d = new Date();
+        document.getElementById("clock").textContent =
+          `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+      clock();
+      setInterval(clock, 1000);
+
+      document.getElementById("ed").textContent = String(
+        Math.floor(Date.now() / 86400000) % 1000,
+      ).padStart(3, "0");
+      document.getElementById("today").textContent = new Date()
+        .toLocaleDateString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+        .toUpperCase();
+      document.getElementById("year").textContent = new Date().getFullYear();
+      document.getElementById("host").textContent = location.hostname || "localhost";
+      document.getElementById("builtAt").textContent =
+        "RENDERED " + new Date().toLocaleTimeString();
+
+      // -------- PERF METRICS --------
+      addEventListener("load", () => {
+        const n = performance.getEntriesByType("navigation")[0];
+        if (n) {
+          const ttfb = Math.max(1, Math.round(n.responseStart - n.requestStart));
+          document.getElementById("ttfb").textContent = ttfb + " ms";
+          document.getElementById("ttfbBig").innerHTML = ttfb + "&nbsp;ms<br>ttfb.";
+          if (n.transferSize) {
+            const kb = Math.round((n.transferSize / 1024) * 10) / 10;
+            document.getElementById("bytes").textContent = kb + " KB";
+          }
+        }
+        const r = +(sessionStorage.getItem("staticReloads") || 0) + 1;
+        sessionStorage.setItem("staticReloads", r);
+        document.getElementById("reloads").textContent = r;
+      });
+
+      // -------- KEYBOARD --------
+      addEventListener("keydown", (e) => {
+        if (e.key.toLowerCase() === "s") shuffle();
+        if (e.key.toLowerCase() === "i") {
+          document.body.classList.toggle("inverted");
+          document.body.style.filter = document.body.style.filter
+            ? ""
+            : "invert(1) hue-rotate(180deg)";
+        }
+        if (e.key.toLowerCase() === "c") burst(innerWidth / 2, innerHeight / 2, 60);
+      });
+
+      // Konami
+      const konami = [
+        "ArrowUp",
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowLeft",
+        "ArrowRight",
+        "b",
+        "a",
+      ];
+      let kbuf = [];
+      addEventListener("keydown", (e) => {
+        kbuf.push(e.key);
+        if (kbuf.length > konami.length) kbuf.shift();
+        if (kbuf.join(",").toLowerCase() === konami.join(",").toLowerCase()) {
+          document.body.classList.add("flash");
+          setTimeout(() => document.body.classList.remove("flash"), 600);
+          for (let i = 0; i < 20; i++) {
+            setTimeout(() => burst(Math.random() * innerWidth, -20, 14), i * 60);
+          }
+        }
+      });
+    </script>
+  </body>
 </html>
